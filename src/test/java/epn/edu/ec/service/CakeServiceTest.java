@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import epn.edu.ec.model.cake.UpdateCakeRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,11 +79,11 @@ public class CakeServiceTest {
         when(cakeRepository.findById(anyLong())).thenReturn(Optional.of(cakeA));
 
         //ACT
-        CakeResponse cakeResponse = cakeService.getCakeById(2l);
+        CakeResponse cakeResponse = cakeService.getCakeById(2L);
         //ASSERT
         assertNotNull(cakeResponse);
         assertEquals("Chocolate Cake", cakeResponse.getTitle());
-        assertEquals(1l, cakeResponse.getId());
+        assertEquals(1L, cakeResponse.getId());
     }
 
     @Test
@@ -121,16 +122,61 @@ public class CakeServiceTest {
 
     @Test
     public void updateCake_ShouldUpdateExistingCake() {
+        // ARRANGE
+        long cakeId = 1L;
 
+        UpdateCakeRequest updateCakeRequest = UpdateCakeRequest.builder()
+                .title("Updated Chocolate Cake")
+                .description("Updated description")
+                .build();
+
+        Cake updatedCake = Cake.builder()
+                .id(cakeId)
+                .title(updateCakeRequest.getTitle())
+                .description(updateCakeRequest.getDescription())
+                .build();
+
+        when(cakeRepository.findById(cakeId)).thenReturn(Optional.of(cakeA));
+        when(cakeRepository.save(any(Cake.class))).thenReturn(updatedCake);
+
+        // ACT
+        CakeResponse response = cakeService.updateCake(cakeId, updateCakeRequest);
+
+        // ASSERT
+        assertNotNull(response);
+        assertEquals(cakeId, response.getId());
+        assertEquals("Updated Chocolate Cake", response.getTitle());
+        assertEquals("Updated description", response.getDescription());
+
+        verify(cakeRepository, times(1)).findById(cakeId);
+        verify(cakeRepository, times(1)).save(any(Cake.class));
     }
 
     @Test
     public void deleteCake_ShouldRemoveExistingCake() {
+        // ARRANGE
+        long cakeId = 1L;
+        when(cakeRepository.findById(cakeId)).thenReturn(Optional.of(cakeA));
 
+        // ACT
+        cakeService.deleteCake(cakeId);
+
+        // ASSERT
+        verify(cakeRepository, times(1)).findById(cakeId);
+        verify(cakeRepository, times(1)).delete(cakeA);
     }
 
     @Test
     public void deleteCake_ShouldThrowException_WhenCakeDoesNotExist() {
+        // ARRANGE
+        long nonExistentCakeId = 999L;
+        when(cakeRepository.findById(nonExistentCakeId)).thenReturn(Optional.empty());
 
+        // ACT & ASSERT
+        assertThrows(CakeNotFoundException.class, () -> cakeService.deleteCake(nonExistentCakeId));
+
+        verify(cakeRepository, times(1)).findById(nonExistentCakeId);
+        verify(cakeRepository, times(0)).delete(any(Cake.class));
     }
+
 }

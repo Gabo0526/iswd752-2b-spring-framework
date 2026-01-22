@@ -1,15 +1,17 @@
 package epn.edu.ec.controller;
 
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
 
+import epn.edu.ec.exception.CakeNotFoundException;
+import epn.edu.ec.model.cake.UpdateCakeRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
@@ -49,8 +51,6 @@ public class CakeControllerTest {
     public void getCakes_shouldReturnListOfCakes() throws Exception {
         //ARRAGE
         //Codigo Similar
-        //List<CakeResponse> cakeList = new ArrayList<>();
-        //cakeList.add(mockCakeResponse);
         CakesResponse cakesResponse = new CakesResponse(List.of(mockCakeResponse));
         when(cakeService.getCakes()).thenReturn(cakesResponse);
 
@@ -68,29 +68,143 @@ public class CakeControllerTest {
         verify(cakeService, times(1)).getCakes();
     }
 
-    public void createCake_shouldCreateCake() throws Exception{
-        //ARRANGE
-        //Request
-        CreateCakeRequest createCakeRequest =
-                CreateCakeRequest.builder().title("New Cake")
-                        .description("New Cake Description").build();
-        //Response
-        CakeResponse cakeResponse =
-                CakeResponse.builder().id(2l)
-                        .title("New Cake")
-                        .description("New Cake Description").build();
+    @Test
+    public void createCake_shouldCreateCake() throws Exception {
+        // ARRANGE
+        CreateCakeRequest createCakeRequest = CreateCakeRequest.builder()
+                .title("New Cake")
+                .description("New Cake Description")
+                .build();
 
-        when(cakeService.createCake(createCakeRequest)).thenReturn(cakeResponse);
+        CakeResponse cakeResponse = CakeResponse.builder()
+                .id(2L)
+                .title("New Cake")
+                .description("New Cake Description")
+                .build();
 
-        //ACT
+        when(cakeService.createCake(any(CreateCakeRequest.class))).thenReturn(cakeResponse);
+
+        // ACT
         ResultActions result = mockMvc.perform(post("/cakes")
-                .content("application/json")
+                .contentType(APPLICATION_JSON)
+                .accept(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(createCakeRequest)));
 
-        //ASSERT
+        // ASSERT
         result.andExpect(status().isCreated());
+        result.andExpect(content().contentType(APPLICATION_JSON));
+        result.andExpect(content().json(objectMapper.writeValueAsString(cakeResponse)));
 
+        verify(cakeService, times(1)).createCake(any(CreateCakeRequest.class));
     }
 
+    @Test
+    public void getCakes_shouldReturnEmptyList() throws Exception {
+        // ARRANGE
+        CakesResponse emptyResponse = new CakesResponse(List.of());
+        when(cakeService.getCakes()).thenReturn(emptyResponse);
+
+        // ACT
+        ResultActions result = mockMvc.perform(get("/cakes")
+                .contentType(APPLICATION_JSON)
+                .accept(APPLICATION_JSON));
+
+        // ASSERT
+        result.andExpect(status().isOk());
+        result.andExpect(content().contentType(APPLICATION_JSON));
+        result.andExpect(content().json(objectMapper.writeValueAsString(emptyResponse)));
+
+        verify(cakeService, times(1)).getCakes();
+    }
+
+    @Test
+    public void getCakeById_shouldReturnCake() throws Exception {
+        // ARRANGE
+        when(cakeService.getCakeById(cakeId)).thenReturn(mockCakeResponse);
+
+        // ACT
+        ResultActions result = mockMvc.perform(get("/cakes/{id}", cakeId)
+                .contentType(APPLICATION_JSON)
+                .accept(APPLICATION_JSON));
+
+        // ASSERT
+        result.andExpect(status().isOk());
+        result.andExpect(content().contentType(APPLICATION_JSON));
+        result.andExpect(content().json(objectMapper.writeValueAsString(mockCakeResponse)));
+
+        verify(cakeService, times(1)).getCakeById(cakeId);
+    }
+
+    @Test
+    public void getCakeById_shouldReturnNotFound() throws Exception {
+        // ARRANGE
+        when(cakeService.getCakeById(cakeId)).thenThrow(new CakeNotFoundException());
+
+        // ACT
+        ResultActions result = mockMvc.perform(get("/cakes/{id}", cakeId)
+                .contentType(APPLICATION_JSON)
+                .accept(APPLICATION_JSON));
+
+        // ASSERT
+        result.andExpect(status().isNotFound());
+        verify(cakeService, times(1)).getCakeById(cakeId);
+    }
+
+    @Test
+    public void updateCake_shouldUpdateCake() throws Exception {
+        // ARRANGE
+        UpdateCakeRequest updateCakeRequest = UpdateCakeRequest.builder()
+                .title("Updated Cake")
+                .description("Updated Description")
+                .build();
+
+        // Ojo: el controller ignora el retorno, pero el service lo retorna (entonces lo mockeamos igual)
+        CakeResponse updatedResponse = new CakeResponse(cakeId, "Updated Cake", "Updated Description");
+
+        when(cakeService.updateCake(eq(cakeId), any(UpdateCakeRequest.class))).thenReturn(updatedResponse);
+
+        // ACT
+        ResultActions result = mockMvc.perform(put("/cakes/{id}", cakeId)
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateCakeRequest)));
+
+        // ASSERT
+        result.andExpect(status().isNoContent());
+        verify(cakeService, times(1)).updateCake(eq(cakeId), any(UpdateCakeRequest.class));
+    }
+
+    @Test
+    public void updateCake_shouldReturnNotFound() throws Exception {
+        // ARRANGE
+        UpdateCakeRequest updateCakeRequest = UpdateCakeRequest.builder()
+                .title("Updated Cake")
+                .description("Updated Description")
+                .build();
+
+        when(cakeService.updateCake(eq(cakeId), any(UpdateCakeRequest.class)))
+                .thenThrow(new CakeNotFoundException());
+
+        // ACT
+        ResultActions result = mockMvc.perform(put("/cakes/{id}", cakeId)
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateCakeRequest)));
+
+        // ASSERT
+        result.andExpect(status().isNotFound());
+        verify(cakeService, times(1)).updateCake(eq(cakeId), any(UpdateCakeRequest.class));
+    }
+
+    @Test
+    public void deleteCake_shouldDeleteCake() throws Exception {
+        // ARRANGE
+        doNothing().when(cakeService).deleteCake(cakeId);
+
+        // ACT
+        ResultActions result = mockMvc.perform(delete("/cakes/{id}", cakeId));
+
+        // ASSERT
+        result.andExpect(status().isNoContent());
+        verify(cakeService, times(1)).deleteCake(cakeId);
+    }
 
 }
