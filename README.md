@@ -50,26 +50,26 @@ _**Important**_: swagger/openapi dependency for spring-boot 3 is now `springdoc-
 
 All APIs are secured using basic auth. Use the following credentials when making requests:
 ```
-username=cake-user
+username=gabo
 password=cake-password-which-should-be-kept-in-a-secret-place-and-injected-when-application-is-deployed
 ```
 
 * GET /cakes
 ```
 curl 'localhost:8081/cakes' \
--u "cake-user:cake-password-which-should-be-kept-in-a-secret-place-and-injected-when-application-is-deployed"
+-u "gabo:cake-password-which-should-be-kept-in-a-secret-place-and-injected-when-application-is-deployed"
 ```
 
 * GET /cakes/{cake_id}
 ```
 curl 'localhost:8081/cakes/15' \
--u "cake-user:cake-password-which-should-be-kept-in-a-secret-place-and-injected-when-application-is-deployed"
+-u "gabo:cake-password-which-should-be-kept-in-a-secret-place-and-injected-when-application-is-deployed"
 ```
 
 * POST /cakes
 ```
 curl -X POST 'localhost:8081/cakes' \
--u "cake-user:cake-password-which-should-be-kept-in-a-secret-place-and-injected-when-application-is-deployed" \
+-u "gabo:cake-password-which-should-be-kept-in-a-secret-place-and-injected-when-application-is-deployed" \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "title": "some title",
@@ -80,7 +80,7 @@ curl -X POST 'localhost:8081/cakes' \
 * PUT /cakes/{cake_id}
 ```
 curl -X PUT 'localhost:8081/cakes/15' \
--u "cake-user:cake-password-which-should-be-kept-in-a-secret-place-and-injected-when-application-is-deployed" \
+-u "gabo:cake-password-which-should-be-kept-in-a-secret-place-and-injected-when-application-is-deployed" \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "title": "some title updated",
@@ -91,5 +91,5 @@ curl -X PUT 'localhost:8081/cakes/15' \
 * DELETE /cakes/{cake_id}
 ```
 curl -X DELETE 'localhost:8081/cakes/15' \
--u "cake-user:cake-password-which-should-be-kept-in-a-secret-place-and-injected-when-application-is-deployed"
+-u "gabo:cake-password-which-should-be-kept-in-a-secret-place-and-injected-when-application-is-deployed"
 ```
